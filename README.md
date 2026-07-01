@@ -1,5 +1,51 @@
-# QingLongScript
-青龙面板脚本自用库薅羊毛
+# ql-scripts
+
+青龙面板自用脚本库。
+
+## 青龙拉库
+
+```bash
+ql repo <repo_url> "scripts/" "templates|README|SCRIPT_STANDARD" "utils" "main" "py js"
+```
+
+其中 `<repo_url>` 替换成当前仓库地址。脚本依赖：
+
+- Python：`requests`
+- Node.js：>= 18
+
+## 开发标准
+
+新增或重构脚本先看 [SCRIPT_STANDARD.md](./SCRIPT_STANDARD.md)。
+
+- Python 模板：[templates/python_script_template.py](./templates/python_script_template.py)
+- JavaScript 模板：[templates/javascript_script_template.js](./templates/javascript_script_template.js)
+
+后续脚本默认放在 `scripts/` 目录，使用短文件名，例如 `alipan.py`、`enshan.py`、`tieba.py`、`wzyd.js`，并在文件头写清 `cron`、`new Env`、环境变量、依赖和多账号格式。
+
+## 脚本列表
+
+| 脚本 | 文件 | 环境变量 | 说明 |
+| --- | --- | --- | --- |
+| 阿里云盘 | `scripts/alipan.py` | `ALIYUNDRIVE_TOKEN` | 阿里云盘签到与奖励领取 |
+| 恩山无线论坛 | `scripts/enshan.py` | `ENSHAN_COOKIE` | 查询恩山币和积分 |
+| 百度贴吧 | `scripts/tieba.py` | `TIEBA_COOKIE` | 贴吧批量签到，支持完整 Cookie 或 BDUSS |
+| 王者营地 | `scripts/wzyd.js` | `WZYD_TOKEN`, `WZYD_BODY` | 王者营地签到 |
+
+多账号建议使用换行分隔，兼容 `&` 或 `#`。Cookie 内容本身常包含分号，默认不要用分号分隔账号。
+
+## 本地检查
+
+```bash
+python tools/check_repo.py
+```
+
+如果已经安装 Node.js，也可以使用：
+
+```bash
+npm run check
+```
+
+## 参考仓库
 
 1. **[smzdm_script](https://github.com/hex-ci/smzdm_script)**  
    用于青龙面板的自用脚本，支持App端签到、转盘抽奖、每日任务等功能。

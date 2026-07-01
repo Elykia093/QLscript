@@ -1,0 +1,11 @@
+{
+  "name": "ql-scripts",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "check": "python tools/check_repo.py"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
