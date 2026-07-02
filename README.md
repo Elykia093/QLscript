@@ -33,18 +33,6 @@ ql repo <repo_url> "scripts/" "templates|README|SCRIPT_STANDARD" "utils" "main" 
 
 多账号建议使用换行分隔，兼容 `&` 或 `#`。Cookie 内容本身常包含分号，默认不要用分号分隔账号。
 
-## 本地检查
-
-```bash
-python tools/check_repo.py
-```
-
-如果已经安装 Node.js，也可以使用：
-
-```bash
-npm run check
-```
-
 ## 参考仓库
 
 以下状态通过 GitHub API 于 2026-07-02 核对；简介取自仓库 `description` 字段，未设置时按空简介标注，并已剔除不可访问项。

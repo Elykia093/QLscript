@@ -90,6 +90,6 @@ ql repo <repo_url> "scripts/" "templates|README|SCRIPT_STANDARD" "utils" "main" 
 - 多账号是否按账号隔离，单个账号失败不会阻断全部账号。
 - 外部请求是否都有 timeout。
 - 通知缺失时是否能降级打印。
-- 提交前至少通过 `python tools/check_repo.py`。
-- Python 单文件可额外执行 `python -m py_compile <file>`。
-- JS 单文件可额外执行 `node --check <file>`。
+- 提交前至少对改动脚本做语法检查。
+- Python 单文件可执行 `python -m py_compile <file>`。
+- JS 单文件可执行 `node --check <file>`。
