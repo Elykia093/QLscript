@@ -5,10 +5,10 @@
 ## 青龙拉库
 
 ```bash
-ql repo <repo_url> "scripts/" "templates|README|SCRIPT_STANDARD" "utils" "main" "py js"
+ql repo https://github.com/Elykia093/QLscript.git "scripts/" "templates|README|SCRIPT_STANDARD" "utils" "main" "py js"
 ```
 
-将 `<repo_url>` 替换为当前仓库地址即可。
+拉库后只会执行 `scripts/` 下的任务脚本，`templates/`、README 和维护规范不会作为任务执行。
 
 ## 运行依赖
 
@@ -16,6 +16,8 @@ ql repo <repo_url> "scripts/" "templates|README|SCRIPT_STANDARD" "utils" "main" 
 - JavaScript 脚本：Node.js 18+
 
 ## 脚本列表
+
+脚本详情见 [scripts/README.md](scripts/README.md)。
 
 | 脚本 | 文件 | 环境变量 | 说明 |
 | --- | --- | --- | --- |
@@ -34,6 +36,7 @@ ql repo <repo_url> "scripts/" "templates|README|SCRIPT_STANDARD" "utils" "main" 
 | `utils/` | Python / JavaScript 公共工具方法 |
 | `templates/` | 新脚本模板，不作为任务执行 |
 | `SCRIPT_STANDARD.md` | 新增或重构脚本时参考的维护规范 |
+| `requirements.txt` | Python 脚本依赖清单 |
 
 ## 维护约定
 
