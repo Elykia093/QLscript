@@ -25,6 +25,10 @@ ql repo https://github.com/Elykia093/QLscript.git "scripts/" "templates|README|S
 | 恩山无线论坛 | `scripts/enshan.py` | `ENSHAN_COOKIE` | 查询恩山币和积分 |
 | 百度贴吧 | `scripts/tieba.py` | `TIEBA_COOKIE` | 贴吧批量签到，支持完整 Cookie 或 BDUSS |
 | 王者营地 | `scripts/wzyd.js` | `WZYD_TOKEN`, `WZYD_BODY` | 王者营地签到 |
+| 夸克网盘 | `scripts/quark.py` | `QUARK_COOKIE` | 夸克网盘签到领取空间 |
+| 什么值得买 | `scripts/smzdm.py` | `SMZDM_COOKIE` | 什么值得买每日签到 |
+| 米游社 | `scripts/miyoushe.py` | `MIHOYO_COOKIE`, `MIHOYO_GIDS` | 米游社社区签到，默认原神、星铁、绝区零 |
+| 吾爱破解 | `scripts/52pojie.py` | `POJIE52_COOKIE` | 吾爱破解论坛签到与积分查询 |
 
 多账号建议使用换行分隔，兼容 `&` 或 `#`。Cookie 内容本身常包含分号，默认不要用分号分隔账号。
 
