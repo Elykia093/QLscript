@@ -1,1 +1,1 @@
-"""Shared helpers for ql-scripts."""
+"""Shared helpers for QLscript."""

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Static repository checks for ql-scripts.
+"""Static repository checks for QLscript.
 
 This script only performs local static checks. It never imports task modules as
 programs and never calls their real sign-in APIs.
