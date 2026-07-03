@@ -12,8 +12,8 @@
 | 王者营地 | `wzyd.js` | `40 8 * * *` | `WZYD_TOKEN`, `WZYD_BODY` | 王者营地签到 |
 | 夸克网盘 | `quark.py` | `50 8 * * *` | `QUARK_COOKIE` | 夸克网盘签到领取空间 |
 | 什么值得买 | `smzdm.py` | `55 8 * * *` | `SMZDM_COOKIE` | 什么值得买每日签到 |
-| 米游社 | `miyoushe.py` | `0 9 * * *` | `MIHOYO_COOKIE`, `MIHOYO_GIDS` | 米游社社区签到，默认原神、星铁、绝区零 |
-| 吾爱破解 | `52pojie.py` | `5 9 * * *` | `POJIE52_COOKIE` | 吾爱破解论坛签到与积分查询 |
+| 米游社 | `mihoyo.py` | `0 9 * * *` | `MIHOYO_COOKIE`, `MIHOYO_GIDS` | 米游社社区签到，默认原神、星铁、绝区零 |
+| 吾爱破解 | `pojie52.py` | `5 9 * * *` | `POJIE52_COOKIE` | 吾爱破解论坛签到与积分查询 |
 
 ## 多账号格式
 
