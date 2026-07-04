@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">QLscript</title>
+  <desc id="desc">QLscript brand mark</desc>
+  <defs>
+    <linearGradient id="mark-gradient" x1="40" y1="32" x2="216" y2="224" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="58" fill="#07131f"/>
+  <circle cx="88" cy="92" r="28" fill="rgba(20,184,166,0.18)"/>
+  <circle cx="176" cy="164" r="34" fill="rgba(14,165,233,0.14)"/>
+  <text x="128" y="151" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="800" fill="url(#mark-gradient)">QL</text>
+  <rect x="72" y="174" width="112" height="18" rx="9" fill="#ffffff"/>
+  <rect x="150" y="174" width="34" height="18" rx="9" fill="#38bdf8"/>
+</svg>

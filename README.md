@@ -19,6 +19,29 @@ ql repo https://github.com/Elykia093/QLscript.git "scripts/" "templates|README|S
 
 脚本详情见 [scripts/README.md](scripts/README.md)。
 
+## 文档站
+
+本仓库提供 VitePress 文档站，内容位于 `docs/`。
+
+```bash
+npm install
+npm run docs:dev
+```
+
+构建静态文档：
+
+```bash
+npm run docs:build
+```
+
+主要页面：
+
+- `docs/index.md`：项目概览
+- `docs/guide/getting-started.md`：快速开始
+- `docs/guide/scripts.md`：脚本索引
+- `docs/guide/environment.md`：环境变量与排错
+- `docs/guide/development.md`：开发规范
+
 | 脚本 | 文件 | 环境变量 | 说明 |
 | --- | --- | --- | --- |
 | 阿里云盘 | `scripts/alipan.py` | `ALIYUNDRIVE_TOKEN` | 阿里云盘签到与奖励领取 |
