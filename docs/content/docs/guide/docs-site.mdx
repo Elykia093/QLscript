@@ -1,0 +1,55 @@
+---
+title: 文档站维护
+description: Fumadocs UI 文档站的目录、开发命令、构建验证和内容同步规则。
+---
+
+## 技术栈
+
+本文档站使用 Next.js App Router、Fumadocs UI、Fumadocs MDX、Tailwind CSS 4 和静态导出。源码在 `docs/`，正文内容在 `docs/content/docs/`。
+
+## 常用命令
+
+在 `docs/` 目录执行：
+
+| 命令 | 用途 |
+| --- | --- |
+| `npm run dev` | 启动本地开发预览 |
+| `npm run types:check` | 生成 Fumadocs/Next 类型并运行 TypeScript 检查 |
+| `npm run build` | 构建静态站点到 `out/` |
+| `npm run start` | 使用 `serve` 预览 `out/` 静态产物 |
+| `npm audit --omit=dev` | 检查生产依赖风险 |
+
+`types:check` 会先生成 Next 路由类型，再重新生成 Fumadocs `.source/`，最后运行 TypeScript 检查。不要把 `fumadocs-mdx` 放到 `next typegen` 前面，否则 `.source/*.ts` 会被截空并导致 `collections/server` 不是模块。
+
+## 内容目录
+
+| 路径 | 用途 |
+| --- | --- |
+| `docs/content/docs/index.mdx` | 文档首页 |
+| `docs/content/docs/guide/` | 安装、环境变量、开发规范、排障 |
+| `docs/content/docs/scripts/` | 每个青龙脚本的详细说明 |
+| `docs/app/` | Next.js 路由和页面 |
+| `docs/lib/source.ts` | Fumadocs 内容源 |
+| `docs/components/search.tsx` | 静态搜索弹窗 |
+
+## 同步规则
+
+- 新增脚本时同步 `README.md`、`scripts/README.md`、`docs/content/docs/guide/scripts.mdx` 和对应 `docs/content/docs/scripts/*.mdx`。
+- 修改环境变量名时同步脚本头、代码读取位置、环境变量页和脚本详解页。
+- 修改多账号格式、通知方式或公共工具时同步 `cookies`、`dependencies`、`development` 和相关脚本页。
+- 构建产物 `docs/out/`、`.next/`、`.source/` 不提交。
+
+## 发布前检查
+
+1. 在仓库根目录运行 `python -m compileall -q scripts templates utils`。
+2. 对修改的 JavaScript 文件运行 `node --check <file>`。
+3. 在 `docs/` 目录运行 `npm run types:check`。
+4. 在 `docs/` 目录运行 `npm run build`。
+5. 在 `docs/` 目录运行 `npm audit --omit=dev`。
+6. 打开 `/docs` 和至少一个脚本详解页确认导航正常。
+
+## 依赖说明
+
+`postcss` 通过 `overrides` 固定到 `8.5.16`，用于覆盖 Next.js 内部依赖的安全告警。升级 Next.js 或 Fumadocs 后，需要重新运行 `npm audit --omit=dev`，确认这个覆盖是否还需要保留。
+
+静态搜索使用项目内的中英混合 tokenizer。中文标题、正文和英文环境变量会进入同一个索引，修改搜索实现时要同时更新服务端 `/api/search` 和客户端搜索弹窗。

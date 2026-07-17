@@ -14,7 +14,6 @@ new Env('恩山无线论坛')
 
 from __future__ import annotations
 
-import os
 import re
 import sys
 from pathlib import Path
@@ -25,10 +24,10 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from utils.ql_common import AccountResult, cookie_name, format_results, send_notify, split_accounts
+from utils.ql_common import AccountResult, cookie_name, run_accounts
 
 SCRIPT_NAME = "恩山无线论坛"
-ENV_NAME = "ENSHAN_COOKIE"
+ACCOUNT_ENV_NAME = "ENSHAN_COOKIE"
 TIMEOUT = 15
 PROFILE_URL = "https://www.right.com.cn/FORUM/home.php?mod=spacecp&ac=credit&showcredit=1"
 
@@ -41,7 +40,7 @@ def extract_credit(html: str) -> tuple[str, str]:
     return coin[0].strip(), point[0].strip()
 
 
-def run_account(cookie: str, index: int) -> AccountResult:
+def run_account(cookie: str, account_index: int) -> AccountResult:
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
@@ -51,32 +50,15 @@ def run_account(cookie: str, index: int) -> AccountResult:
     response.raise_for_status()
     coin, point = extract_credit(response.text)
     return AccountResult(
-        index=index,
+        index=account_index,
         ok=True,
-        title=cookie_name(cookie, index),
+        title=cookie_name(cookie, account_index),
         message=f"恩山币：{coin}，积分：{point}",
     )
 
 
 def main() -> int:
-    accounts = split_accounts(os.getenv(ENV_NAME))
-    if not accounts:
-        message = f"未配置环境变量 {ENV_NAME}"
-        send_notify(SCRIPT_NAME, message)
-        return 1
-
-    results: list[AccountResult] = []
-    for index, account in enumerate(accounts, start=1):
-        try:
-            results.append(run_account(account, index))
-        except Exception as error:
-            results.append(
-                AccountResult(index=index, ok=False, title=cookie_name(account, index), message=str(error))
-            )
-
-    content = format_results(results)
-    send_notify(SCRIPT_NAME, content)
-    return 0 if any(result.ok for result in results) else 1
+    return run_accounts(SCRIPT_NAME, ACCOUNT_ENV_NAME, run_account, cookie_name)
 
 
 if __name__ == "__main__":

@@ -34,10 +34,18 @@ new Env('示例任务')
 ## 环境变量
 
 - 变量名使用全大写和下划线，例如 `ALIYUNDRIVE_TOKEN`。
+- 格式统一为 `<业务>_<内容>`，例如 `MIHOYO_COOKIE`、`WZYD_HEADERS`；名称必须准确表达变量内容，不用 `TOKEN` 代称整组请求头。
 - README、脚本头注释和代码读取的变量名必须一致。
 - 不把 token、cookie、Authorization、完整请求头写死到代码里。
 - 日志和通知不得打印完整 token/cookie，只能打印脱敏后的账号标识或账号序号。
 - 多账号默认用换行分隔；兼容 `&`、`#` 只用于旧脚本迁移。不要默认用分号分隔 Cookie，因为 Cookie 本身常包含分号。
+
+## 代码变量命名
+
+- Python 变量和函数使用 `snake_case`，JavaScript 使用 `camelCase`，常量统一使用 `UPPER_SNAKE_CASE`。
+- 保存环境变量名称的常量统一以 `_ENV_NAME` 结尾，例如 `ACCOUNT_ENV_NAME`、`BODY_ENV_NAME`。
+- 一基账号序号统一命名为 Python `account_index`、JavaScript `accountIndex`；零基遍历位置使用 `account_offset`、`accountOffset`。
+- `AccountResult.index` 和 JavaScript 结果对象的 `index` 是固定结果字段，不作为临时循环变量使用。
 
 ## 运行结构
 
@@ -53,6 +61,9 @@ new Env('示例任务')
 Python 复制 `templates/python_script_template.py` 后再改业务逻辑。
 
 JavaScript 复制 `templates/javascript_script_template.js` 后再改业务逻辑。
+
+- Python 多账号入口统一使用 `utils.ql_common.run_accounts`。
+- JavaScript 结果汇总统一使用 `formatResults`；账号内容是 JSON 时使用 `splitJsonAccounts`。
 
 ## 请求与错误处理
 
@@ -90,6 +101,7 @@ ql repo https://github.com/Elykia093/QLscript.git "scripts/" "templates|README|S
 - 多账号是否按账号隔离，单个账号失败不会阻断全部账号。
 - 外部请求是否都有 timeout。
 - 通知缺失时是否能降级打印。
-- 提交前至少对改动脚本做语法检查。
+- 修改公共账号处理、解析器或重试逻辑后，是否复核所有调用方和受影响脚本。
+- 提交前运行 `python -m compileall -q scripts templates utils`。
 - Python 单文件可执行 `python -m py_compile <file>`。
 - JS 单文件可执行 `node --check <file>`。

@@ -1,0 +1,31 @@
+---
+title: QLscript
+description: 青龙面板脚本库的使用、配置和维护入口。
+---
+
+QLscript 是一个面向青龙面板的个人自动化脚本库。任务脚本集中放在 `scripts/`，公共方法放在 `utils/`，模板和维护标准放在 `templates/` 与 `SCRIPT_STANDARD.md`。
+
+## 快速入口
+
+| 主题 | 内容 |
+| --- | --- |
+| [快速开始](./guide/getting-started) | 拉库命令、运行依赖、目录职责 |
+| [脚本索引](./guide/scripts) | 当前脚本、cron、环境变量和用途 |
+| [脚本详解](./scripts/alipan) | 每个脚本的凭据、执行行为和常见失败原因 |
+| [环境变量](./guide/environment) | 多账号格式、必填变量和填写注意事项 |
+| [Cookie 与凭据](./guide/cookies) | Cookie/token 的填写和脱敏规则 |
+| [开发规范](./guide/development) | 新脚本模板、文件头、错误处理和提交流程 |
+| [文档站维护](./guide/docs-site) | Fumadocs 文档站的开发、构建和发布产物 |
+| [排障](./guide/troubleshooting) | 依赖、通知、账号失败和常见问题 |
+
+## 仓库约定
+
+- `scripts/` 只放青龙实际执行的任务脚本。
+- `utils/` 存放 Python / JavaScript 公共工具。
+- `templates/` 是新脚本模板，不作为任务执行。
+- `README.md`、`scripts/README.md`、脚本头和代码读取的环境变量名必须保持一致。
+- 日志和通知不得输出完整 token、cookie、Authorization 或完整请求头。
+
+## 使用顺序
+
+第一次接入时先看快速开始和环境变量。已经能运行后，再按脚本详解页补充每个任务的 Cookie、token 或请求体。新增脚本时从开发规范开始，并同步脚本索引、脚本详解页和根 README。

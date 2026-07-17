@@ -1,0 +1,39 @@
+---
+title: 阿里云盘
+description: 阿里云盘签到与奖励领取脚本说明。
+---
+
+## 基本信息
+
+| 项目 | 内容 |
+| --- | --- |
+| 文件 | `scripts/alipan.py` |
+| cron | `10 8 * * *` |
+| 任务名 | `阿里云盘` |
+| 依赖 | Python `requests`、青龙 `notify.py` |
+| 环境变量 | `ALIYUNDRIVE_TOKEN` |
+
+## 环境变量
+
+`ALIYUNDRIVE_TOKEN` 填阿里云盘 `refresh_token`。多账号优先换行分隔，兼容 `&` 或 `#`。
+
+```text
+refresh_token_1
+refresh_token_2
+```
+
+## 执行流程
+
+1. 使用 `refresh_token` 请求 `access_token`。
+2. 调用签到接口获取累计签到天数。
+3. 按当天签到天数领取奖励。
+4. 通知中展示脱敏 token、累计签到天数和奖励名。
+
+## 常见失败
+
+| 现象 | 可能原因 | 处理 |
+| --- | --- | --- |
+| 刷新 `access_token` 失败 | `refresh_token` 过期或填错 | 重新获取 `refresh_token` |
+| 签到响应缺少 `signInCount` | 接口结构变化或账号异常 | 看运行日志里的接口错误信息 |
+| 今日未获得奖励 | 奖励接口成功但未返回奖励名称 | 通常不影响签到结果 |
+| 奖励领取失败 | 签到成功，但奖励接口发生网络、HTTP 或响应解析错误 | 根据通知中的原因稍后重试 |

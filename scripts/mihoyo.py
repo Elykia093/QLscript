@@ -31,11 +31,11 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from utils.ql_common import AccountResult, format_results, mask_secret, send_notify, split_accounts
+from utils.ql_common import AccountResult, mask_secret, run_accounts
 
 SCRIPT_NAME = "米游社"
-ENV_NAME = "MIHOYO_COOKIE"
-GIDS_ENV_NAME = "MIHOYO_GIDS"
+ACCOUNT_ENV_NAME = "MIHOYO_COOKIE"
+FORUM_IDS_ENV_NAME = "MIHOYO_GIDS"
 TIMEOUT = 15
 
 SIGN_URL = "https://bbs-api.miyoushe.com/apihub/app/api/signIn"
@@ -71,20 +71,20 @@ def extract_cookie_value(cookie: str, key: str) -> str:
     return match.group(1).strip() if match else ""
 
 
-def account_title(cookie: str, index: int) -> str:
+def account_title(cookie: str, account_index: int) -> str:
     uid = (
         extract_cookie_value(cookie, "account_id_v2")
         or extract_cookie_value(cookie, "ltuid_v2")
         or extract_cookie_value(cookie, "account_id")
         or extract_cookie_value(cookie, "ltuid")
     )
-    return f"账号{index}" if not uid else mask_secret(uid)
+    return f"账号{account_index}" if not uid else mask_secret(uid)
 
 
 def selected_gids() -> list[str]:
-    raw = os.getenv(GIDS_ENV_NAME, "2,6,8")
+    raw = os.getenv(FORUM_IDS_ENV_NAME, "2,6,8")
     gids = [item.strip() for item in re.split(r"[,，\s]+", raw) if item.strip()]
-    return [gid for gid in gids if gid in FORUMS]
+    return list(dict.fromkeys(gid for gid in gids if gid in FORUMS))
 
 
 def build_headers(cookie: str, body: str) -> dict[str, str]:
@@ -126,10 +126,10 @@ def sign_forum(session: requests.Session, cookie: str, gid: str) -> str:
     raise RuntimeError(f"{name}: {message}")
 
 
-def run_account(cookie: str, index: int) -> AccountResult:
+def run_account(cookie: str, account_index: int) -> AccountResult:
     gids = selected_gids()
     if not gids:
-        raise RuntimeError(f"{GIDS_ENV_NAME} 未配置有效分区")
+        raise RuntimeError(f"{FORUM_IDS_ENV_NAME} 未配置有效分区")
 
     messages: list[str] = []
     with requests.Session() as session:
@@ -137,28 +137,16 @@ def run_account(cookie: str, index: int) -> AccountResult:
             messages.append(sign_forum(session, cookie, gid))
             time.sleep(random.uniform(1.0, 2.0))
 
-    return AccountResult(index=index, ok=True, title=account_title(cookie, index), message="；".join(messages))
+    return AccountResult(
+        index=account_index,
+        ok=True,
+        title=account_title(cookie, account_index),
+        message="；".join(messages),
+    )
 
 
 def main() -> int:
-    accounts = split_accounts(os.getenv(ENV_NAME))
-    if not accounts:
-        message = f"未配置环境变量 {ENV_NAME}"
-        send_notify(SCRIPT_NAME, message)
-        return 1
-
-    results: list[AccountResult] = []
-    for index, account in enumerate(accounts, start=1):
-        try:
-            results.append(run_account(account, index))
-        except Exception as error:
-            results.append(
-                AccountResult(index=index, ok=False, title=account_title(account, index), message=str(error))
-            )
-
-    content = format_results(results)
-    send_notify(SCRIPT_NAME, content)
-    return 0 if any(result.ok for result in results) else 1
+    return run_accounts(SCRIPT_NAME, ACCOUNT_ENV_NAME, run_account, account_title)
 
 
 if __name__ == "__main__":

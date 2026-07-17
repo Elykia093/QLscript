@@ -1,0 +1,25 @@
+---
+title: 运行依赖
+description: Python、Node.js 和青龙通知模块的依赖边界。
+---
+
+## Python
+
+Python 脚本当前依赖 `requests`。青龙环境缺少依赖时，可以按面板依赖管理方式安装，或参考根目录 `requirements.txt`。
+
+```text
+requests
+```
+
+## JavaScript
+
+JavaScript 脚本需要 Node.js 18+。当前 `wzyd.js` 使用仓库内公共方法和青龙通知能力。
+
+## 通知模块
+
+| 语言 | 优先通知模块 | 降级行为 |
+| --- | --- | --- |
+| Python | `notify.py` 的 `send(title, content)` | 控制台输出 |
+| JavaScript | `sendNotify.js` 的 `sendNotify(title, content)` | 控制台输出 |
+
+通知模块缺失不应该导致任务直接失败。

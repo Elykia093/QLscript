@@ -1,0 +1,46 @@
+---
+title: 快速开始
+description: 在青龙面板中拉取并运行 QLscript。
+---
+
+## 青龙拉库
+
+在青龙面板中使用下面的拉库命令：
+
+```bash
+ql repo https://github.com/Elykia093/QLscript.git "scripts/" "templates|README|SCRIPT_STANDARD" "utils" "main" "py js"
+```
+
+这个命令只执行 `scripts/` 下的任务脚本，`templates/`、README 和维护规范不会作为任务执行。
+
+## 运行依赖
+
+| 类型 | 依赖 |
+| --- | --- |
+| Python 脚本 | `requests` |
+| JavaScript 脚本 | Node.js 18+ |
+
+Python 依赖也写在仓库根目录的 `requirements.txt`。
+
+## 目录结构
+
+| 路径 | 用途 |
+| --- | --- |
+| `scripts/` | 青龙实际拉取和执行的任务脚本 |
+| `utils/` | Python / JavaScript 公共工具方法 |
+| `templates/` | 新脚本模板，不作为任务执行 |
+| `docs/` | Fumadocs UI 文档站 |
+| `SCRIPT_STANDARD.md` | 新增或重构脚本时参考的维护规范 |
+| `requirements.txt` | Python 脚本依赖清单 |
+
+## 首次检查
+
+1. 确认青龙已安装 Python 的 `requests`。
+2. 如果运行 JavaScript 脚本，确认 Node.js 版本不低于 18。
+3. 按脚本文档填写对应环境变量。
+4. 多账号优先使用换行分隔。
+5. 先运行单个脚本确认日志正常，再启用定时任务。
+
+## 下一步
+
+完成拉库后，进入脚本详解查看对应脚本的凭据要求和常见失败原因。准备新增脚本时，先读开发规范和文档站维护说明。

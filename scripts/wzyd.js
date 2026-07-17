@@ -3,8 +3,9 @@ cron: 40 8 * * *
 new Env('王者营地')
 
 环境变量:
-  WZYD_TOKEN 必填，请求头 JSON。多账号建议用换行分隔，兼容 & 或 #。
-  WZYD_BODY 必填，请求体 JSON。多账号数量和 WZYD_TOKEN 保持一致。
+  WZYD_HEADERS 必填，请求头 JSON 对象。多账号建议用换行分隔，兼容 & 或 #。
+  WZYD_BODY 必填，请求体 JSON 对象。多账号数量和 WZYD_HEADERS 保持一致。
+  WZYD_TOKEN 兼容旧变量名，建议迁移到 WZYD_HEADERS。
 
 依赖:
   Node.js >= 18
@@ -14,28 +15,37 @@ new Env('王者营地')
 'use strict';
 
 const {
+  errorMessage,
+  formatResults,
   maskSecret,
   requestJson,
   sendNotification,
-  splitAccounts,
+  splitJsonAccounts,
 } = require('../utils/ql_common');
 
 const SCRIPT_NAME = '王者营地';
-const TOKEN_ENV = 'WZYD_TOKEN';
-const BODY_ENV = 'WZYD_BODY';
+const HEADERS_ENV_NAME = 'WZYD_HEADERS';
+const LEGACY_HEADERS_ENV_NAME = 'WZYD_TOKEN';
+const BODY_ENV_NAME = 'WZYD_BODY';
 const SIGN_URL = 'https://kohcamp.qq.com/operation/action/signin';
 
-function parseJson(value, label, index) {
+function parseJsonObject(value, label, accountIndex) {
+  let parsed;
   try {
-    return JSON.parse(value);
+    parsed = JSON.parse(value);
   } catch (error) {
-    throw new Error(`账号${index}${label}不是合法 JSON: ${error.message}`);
+    throw new Error(`账号${accountIndex}${label}不是合法 JSON: ${error.message}`);
   }
+
+  if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
+    throw new Error(`账号${accountIndex}${label}必须是 JSON 对象`);
+  }
+  return parsed;
 }
 
-async function runAccount(headerText, bodyText, index) {
-  const headers = parseJson(headerText, '请求头', index);
-  const payload = parseJson(bodyText, '请求体', index);
+async function runAccount(headerText, bodyText, accountIndex) {
+  const headers = parseJsonObject(headerText, '请求头', accountIndex);
+  const payload = parseJsonObject(bodyText, '请求体', accountIndex);
   const data = await requestJson(SIGN_URL, {
     method: 'POST',
     headers: {
@@ -46,9 +56,9 @@ async function runAccount(headerText, bodyText, index) {
     timeout: 15000,
   });
 
-  const roleId = payload.roleId ? maskSecret(String(payload.roleId), 2) : `账号${index}`;
+  const roleId = payload.roleId ? maskSecret(String(payload.roleId), 2) : `账号${accountIndex}`;
   return {
-    index,
+    index: accountIndex,
     ok: true,
     title: roleId,
     message: JSON.stringify(data),
@@ -56,47 +66,45 @@ async function runAccount(headerText, bodyText, index) {
 }
 
 async function main() {
-  const tokens = splitAccounts(process.env[TOKEN_ENV]);
-  const bodies = splitAccounts(process.env[BODY_ENV]);
+  const headerTexts = splitJsonAccounts(
+    process.env[HEADERS_ENV_NAME] || process.env[LEGACY_HEADERS_ENV_NAME],
+  );
+  const bodyTexts = splitJsonAccounts(process.env[BODY_ENV_NAME]);
 
-  if (tokens.length === 0 || bodies.length === 0) {
-    await sendNotification(SCRIPT_NAME, `未配置环境变量 ${TOKEN_ENV} 或 ${BODY_ENV}`);
+  if (headerTexts.length === 0 || bodyTexts.length === 0) {
+    await sendNotification(SCRIPT_NAME, `未配置环境变量 ${HEADERS_ENV_NAME} 或 ${BODY_ENV_NAME}`);
     process.exitCode = 1;
     return;
   }
 
-  if (tokens.length !== bodies.length) {
-    await sendNotification(SCRIPT_NAME, `${TOKEN_ENV} 和 ${BODY_ENV} 账号数量不一致`);
+  if (headerTexts.length !== bodyTexts.length) {
+    await sendNotification(SCRIPT_NAME, `${HEADERS_ENV_NAME} 和 ${BODY_ENV_NAME} 账号数量不一致`);
     process.exitCode = 1;
     return;
   }
 
   const results = [];
-  for (let index = 0; index < tokens.length; index += 1) {
-    const accountNo = index + 1;
+  for (const [accountOffset, headerText] of headerTexts.entries()) {
+    const accountIndex = accountOffset + 1;
     try {
-      results.push(await runAccount(tokens[index], bodies[index], accountNo));
+      results.push(await runAccount(headerText, bodyTexts[accountOffset], accountIndex));
     } catch (error) {
       results.push({
-        index: accountNo,
+        index: accountIndex,
         ok: false,
-        title: `账号${accountNo}`,
-        message: error.message || String(error),
+        title: `账号${accountIndex}`,
+        message: errorMessage(error),
       });
     }
   }
 
-  const content = results
-    .map(result => `${result.ok ? '成功' : '失败'} | 账号${result.index} | ${result.title}: ${result.message}`)
-    .join('\n');
-
-  await sendNotification(SCRIPT_NAME, content);
+  await sendNotification(SCRIPT_NAME, formatResults(results));
   if (!results.some(result => result.ok)) {
     process.exitCode = 1;
   }
 }
 
 main().catch(error => {
-  console.error(`${SCRIPT_NAME}运行失败:`, error);
+  console.error(`${SCRIPT_NAME}运行失败: ${errorMessage(error)}`);
   process.exitCode = 1;
 });

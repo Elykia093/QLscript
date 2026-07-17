@@ -1,0 +1,33 @@
+---
+title: 什么值得买
+description: 什么值得买每日签到脚本说明。
+---
+
+## 基本信息
+
+| 项目 | 内容 |
+| --- | --- |
+| 文件 | `scripts/smzdm.py` |
+| cron | `55 8 * * *` |
+| 任务名 | `什么值得买` |
+| 依赖 | Python `requests`、青龙 `notify.py` |
+| 环境变量 | `SMZDM_COOKIE` |
+
+## 环境变量
+
+`SMZDM_COOKIE` 填什么值得买 App 端 Cookie，需要包含 `sess`。多账号优先换行分隔。
+
+## 执行流程
+
+1. 从 Cookie 中提取 `sess` 作为签到 token。
+2. 生成随机 `request_key`。
+3. 调用签到接口。
+4. 通知中展示连续签到天数、金币、碎银和补签卡。
+
+## 常见失败
+
+| 现象 | 可能原因 | 处理 |
+| --- | --- | --- |
+| Cookie 缺少 sess | Cookie 不完整或不是 App 端请求 | 重新抓 App 端 Cookie |
+| 签到失败 | 接口返回业务错误 | 查看 `error_msg` 或 `message` |
+| HTTP 错误 | 登录态失效或请求参数变化 | 更新 Cookie 后重试 |

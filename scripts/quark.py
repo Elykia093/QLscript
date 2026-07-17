@@ -14,7 +14,6 @@ new Env('夸克网盘')
 
 from __future__ import annotations
 
-import os
 import re
 import sys
 from pathlib import Path
@@ -25,10 +24,10 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from utils.ql_common import AccountResult, format_results, mask_secret, send_notify, split_accounts
+from utils.ql_common import AccountResult, mask_secret, run_accounts
 
 SCRIPT_NAME = "夸克网盘"
-ENV_NAME = "QUARK_COOKIE"
+ACCOUNT_ENV_NAME = "QUARK_COOKIE"
 TIMEOUT = 15
 
 BASE_URL = "https://drive-m.quark.cn"
@@ -49,19 +48,19 @@ def extract_cookie_value(cookie: str, key: str) -> str:
     return match.group(1).strip() if match else ""
 
 
-def account_title(cookie: str, index: int) -> str:
+def account_title(cookie: str, account_index: int) -> str:
     uid = extract_cookie_value(cookie, "__uid") or extract_cookie_value(cookie, "kps")
-    return f"账号{index}" if not uid else mask_secret(uid)
+    return f"账号{account_index}" if not uid else mask_secret(uid)
 
 
 def format_bytes(size_bytes: int | float) -> str:
     size = float(size_bytes)
     units = ("B", "KB", "MB", "GB", "TB")
-    index = 0
-    while size >= 1024 and index < len(units) - 1:
+    unit_index = 0
+    while size >= 1024 and unit_index < len(units) - 1:
         size /= 1024
-        index += 1
-    return f"{size:.2f}{units[index]}"
+        unit_index += 1
+    return f"{size:.2f}{units[unit_index]}"
 
 
 def build_params(cookie: str) -> dict[str, str]:
@@ -104,13 +103,13 @@ def sign_growth(session: requests.Session, cookie: str) -> int:
     return int(data.get("sign_daily_reward") or 0)
 
 
-def run_account(cookie: str, index: int) -> AccountResult:
+def run_account(cookie: str, account_index: int) -> AccountResult:
     required = ("kps", "sign", "vcode")
     missing = [key for key in required if not extract_cookie_value(cookie, key)]
     if missing:
         raise RuntimeError("Cookie 缺少移动端参数：" + ", ".join(missing))
 
-    title = account_title(cookie, index)
+    title = account_title(cookie, account_index)
     with requests.Session() as session:
         info = get_growth_info(session, cookie)
         cap_sign = info.get("cap_sign") or {}
@@ -127,28 +126,11 @@ def run_account(cookie: str, index: int) -> AccountResult:
         total_capacity = format_bytes(int(info.get("total_capacity") or 0))
         sign_reward = format_bytes(int((info.get("cap_composition") or {}).get("sign_reward") or 0))
         message = f"{sign_text}，连签进度 {progress}，总空间 {total_capacity}，签到累计获得 {sign_reward}"
-        return AccountResult(index=index, ok=True, title=title, message=message)
+        return AccountResult(index=account_index, ok=True, title=title, message=message)
 
 
 def main() -> int:
-    accounts = split_accounts(os.getenv(ENV_NAME))
-    if not accounts:
-        message = f"未配置环境变量 {ENV_NAME}"
-        send_notify(SCRIPT_NAME, message)
-        return 1
-
-    results: list[AccountResult] = []
-    for index, account in enumerate(accounts, start=1):
-        try:
-            results.append(run_account(account, index))
-        except Exception as error:
-            results.append(
-                AccountResult(index=index, ok=False, title=account_title(account, index), message=str(error))
-            )
-
-    content = format_results(results)
-    send_notify(SCRIPT_NAME, content)
-    return 0 if any(result.ok for result in results) else 1
+    return run_accounts(SCRIPT_NAME, ACCOUNT_ENV_NAME, run_account, account_title)
 
 
 if __name__ == "__main__":

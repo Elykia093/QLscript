@@ -1,0 +1,59 @@
+name: Quality CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Check scripts and build docs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: docs
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.23.1
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Check Python syntax
+        working-directory: .
+        run: python3 -m compileall -q scripts templates utils
+
+      - name: Check JavaScript syntax
+        working-directory: .
+        run: |
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+          done < <(find scripts templates utils -type f -name '*.js' -print0)
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check types
+        run: npm run types:check
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev

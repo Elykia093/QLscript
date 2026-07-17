@@ -14,7 +14,6 @@ new Env('吾爱破解')
 
 from __future__ import annotations
 
-import os
 import re
 import sys
 from pathlib import Path
@@ -25,10 +24,10 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from utils.ql_common import AccountResult, cookie_name, format_results, send_notify, split_accounts
+from utils.ql_common import AccountResult, cookie_name, run_accounts
 
 SCRIPT_NAME = "吾爱破解"
-ENV_NAME = "POJIE52_COOKIE"
+ACCOUNT_ENV_NAME = "POJIE52_COOKIE"
 TIMEOUT = 15
 
 BASE_URL = "https://www.52pojie.cn"
@@ -68,8 +67,8 @@ def extract_credit(html: str) -> str:
     return "，".join(wanted[:4]) if wanted else "，".join(f"{name.strip()} {value.strip()}" for name, value in items[:4])
 
 
-def run_account(cookie: str, index: int) -> AccountResult:
-    title = cookie_name(cookie, index)
+def run_account(cookie: str, account_index: int) -> AccountResult:
+    title = cookie_name(cookie, account_index)
     headers = {**HEADERS, "Cookie": cookie, "Referer": BASE_URL}
     with requests.Session() as session:
         page = session.get(SIGN_PAGE_URL, headers=headers, timeout=TIMEOUT)
@@ -78,7 +77,12 @@ def run_account(cookie: str, index: int) -> AccountResult:
         if "您今天已经签到过了" in page.text or "今日已签" in page.text:
             credit = session.get(CREDIT_URL, headers=headers, timeout=TIMEOUT)
             credit.raise_for_status()
-            return AccountResult(index=index, ok=True, title=title, message=f"今日已签到，{extract_credit(credit.text)}")
+            return AccountResult(
+                index=account_index,
+                ok=True,
+                title=title,
+                message=f"今日已签到，{extract_credit(credit.text)}",
+            )
 
         formhash = extract_formhash(page.text)
         payload = {
@@ -94,7 +98,12 @@ def run_account(cookie: str, index: int) -> AccountResult:
         if any(keyword in text for keyword in ("签到成功", "您今天已经签到过了", "今日已签")):
             credit = session.get(CREDIT_URL, headers=headers, timeout=TIMEOUT)
             credit.raise_for_status()
-            return AccountResult(index=index, ok=True, title=title, message=f"签到完成，{extract_credit(credit.text)}")
+            return AccountResult(
+                index=account_index,
+                ok=True,
+                title=title,
+                message=f"签到完成，{extract_credit(credit.text)}",
+            )
 
         clean_text = re.sub(r"<[^>]+>", "", text)
         clean_text = re.sub(r"\s+", " ", clean_text).strip()
@@ -102,24 +111,7 @@ def run_account(cookie: str, index: int) -> AccountResult:
 
 
 def main() -> int:
-    accounts = split_accounts(os.getenv(ENV_NAME))
-    if not accounts:
-        message = f"未配置环境变量 {ENV_NAME}"
-        send_notify(SCRIPT_NAME, message)
-        return 1
-
-    results: list[AccountResult] = []
-    for index, account in enumerate(accounts, start=1):
-        try:
-            results.append(run_account(account, index))
-        except Exception as error:
-            results.append(
-                AccountResult(index=index, ok=False, title=cookie_name(account, index), message=str(error))
-            )
-
-    content = format_results(results)
-    send_notify(SCRIPT_NAME, content)
-    return 0 if any(result.ok for result in results) else 1
+    return run_accounts(SCRIPT_NAME, ACCOUNT_ENV_NAME, run_account, cookie_name)
 
 
 if __name__ == "__main__":

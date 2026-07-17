@@ -3,3 +3,8 @@ __pycache__/
 node_modules/
 .env
 .DS_Store
+docs/.next/
+docs/.source/
+docs/*.log
+docs/*.tsbuildinfo
+docs/out/

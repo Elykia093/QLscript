@@ -1,0 +1,14 @@
+{
+  "title": "指南",
+  "pages": [
+    "getting-started",
+    "scripts",
+    "environment",
+    "cookies",
+    "dependencies",
+    "development",
+    "docs-site",
+    "troubleshooting",
+    "references"
+  ]
+}

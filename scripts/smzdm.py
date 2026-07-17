@@ -14,7 +14,6 @@ new Env('什么值得买')
 
 from __future__ import annotations
 
-import os
 import random
 import re
 import sys
@@ -26,10 +25,10 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from utils.ql_common import AccountResult, cookie_name, format_results, send_notify, split_accounts
+from utils.ql_common import AccountResult, cookie_name, run_accounts
 
 SCRIPT_NAME = "什么值得买"
-ENV_NAME = "SMZDM_COOKIE"
+ACCOUNT_ENV_NAME = "SMZDM_COOKIE"
 TIMEOUT = 15
 
 CHECKIN_URL = "https://user-api.smzdm.com/checkin"
@@ -56,7 +55,7 @@ def build_headers(cookie: str) -> dict[str, str]:
     }
 
 
-def run_account(cookie: str, index: int) -> AccountResult:
+def run_account(cookie: str, account_index: int) -> AccountResult:
     token = extract_cookie_value(cookie, "sess")
     if not token:
         raise RuntimeError("Cookie 缺少 sess")
@@ -81,28 +80,16 @@ def run_account(cookie: str, index: int) -> AccountResult:
         f"碎银 {result.get('pre_re_silver', '-')}，"
         f"补签卡 {result.get('cards', '-')}"
     )
-    return AccountResult(index=index, ok=True, title=cookie_name(cookie, index), message=message)
+    return AccountResult(
+        index=account_index,
+        ok=True,
+        title=cookie_name(cookie, account_index),
+        message=message,
+    )
 
 
 def main() -> int:
-    accounts = split_accounts(os.getenv(ENV_NAME))
-    if not accounts:
-        message = f"未配置环境变量 {ENV_NAME}"
-        send_notify(SCRIPT_NAME, message)
-        return 1
-
-    results: list[AccountResult] = []
-    for index, account in enumerate(accounts, start=1):
-        try:
-            results.append(run_account(account, index))
-        except Exception as error:
-            results.append(
-                AccountResult(index=index, ok=False, title=cookie_name(account, index), message=str(error))
-            )
-
-    content = format_results(results)
-    send_notify(SCRIPT_NAME, content)
-    return 0 if any(result.ok for result in results) else 1
+    return run_accounts(SCRIPT_NAME, ACCOUNT_ENV_NAME, run_account, cookie_name)
 
 
 if __name__ == "__main__":

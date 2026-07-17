@@ -1,0 +1,62 @@
+---
+title: 开发规范
+description: 新增或重构脚本时的文件结构、文件头、错误处理和提交前检查。
+---
+
+## 文件命名
+
+- 任务脚本放在 `scripts/` 目录，使用小写短文件名，例如 `alipan.py`、`enshan.py`、`tieba.py`、`wzyd.js`。
+- 公共依赖放在 `utils/`。
+- 新脚本优先复制 `templates/python_script_template.py` 或 `templates/javascript_script_template.js`。
+
+## 文件头
+
+每个任务脚本顶部必须写：
+
+- `cron: <表达式>`：默认定时。
+- `new Env('任务名')`：青龙任务名。
+- 环境变量：变量名、用途、是否必填、多账号格式。
+- 依赖：Python/Node 依赖，以及仓库内公共文件依赖。
+
+## 变量命名
+
+- 环境变量统一使用 `<业务>_<内容>` 的全大写格式，例如 `MIHOYO_COOKIE`、`WZYD_HEADERS`。
+- 名称必须表达真实内容，不用 `TOKEN` 代称整组请求头。
+- Python 变量和函数使用 `snake_case`，JavaScript 使用 `camelCase`，常量使用 `UPPER_SNAKE_CASE`。
+- 环境变量名称常量以 `_ENV_NAME` 结尾，例如 `ACCOUNT_ENV_NAME`、`BODY_ENV_NAME`。
+- 一基账号序号使用 Python `account_index`、JavaScript `accountIndex`；零基遍历位置使用 `account_offset`、`accountOffset`。
+- 结果对象中的 `index` 是固定字段，不作为临时循环变量。
+
+## 运行结构
+
+1. 读取并校验环境变量。
+2. 拆分多账号。
+3. 逐账号执行，账号之间互不影响。
+4. 聚合结果。
+5. 打印日志并发送通知。
+6. 有配置缺失或全部失败时返回非零退出码。
+
+Python 多账号入口统一使用 `utils.ql_common.run_accounts`。JavaScript 结果汇总统一使用 `formatResults`；账号内容是 JSON 时使用 `splitJsonAccounts`，避免合法 JSON 内的 `&` 或 `#` 被误切。
+
+## 请求与错误处理
+
+- 所有外部请求必须设置 timeout。
+- 只在明确安全的场景做有限重试，不默认重试非幂等写操作。
+- 网络错误、HTTP 错误、业务错误要分开记录。
+- 不用裸 `except:` / 空 `catch` 吞错误。
+- Python 中除非有明确证据，不使用 `verify=False`。
+- JS 中 `Promise` 必须 `await` 或 `return`。
+
+## 提交前检查
+
+- 文件是否放在 `scripts/` 目录，命名是否短且清楚。
+- 文件头是否包含 `cron`、`new Env`、环境变量、依赖。
+- README 和文档是否同步新增脚本说明。
+- 环境变量名在 README、脚本头和代码里是否完全一致。
+- 多账号是否按账号隔离，单个账号失败不会阻断全部账号。
+- 外部请求是否都有 timeout。
+- 通知缺失时是否能降级打印。
+- 修改公共账号处理、解析器或重试逻辑后，是否复核所有调用方和受影响脚本。
+- Python 目录语法检查可执行 `python -m compileall -q scripts templates utils`。
+- Python 单文件可执行 `python -m py_compile <file>`。
+- JS 单文件可执行 `node --check <file>`。

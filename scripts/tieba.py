@@ -29,10 +29,10 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from utils.ql_common import AccountResult, cookie_name, format_results, send_notify, split_accounts
+from utils.ql_common import AccountResult, cookie_name, run_accounts
 
 SCRIPT_NAME = "百度贴吧"
-ENV_NAME = "TIEBA_COOKIE"
+ACCOUNT_ENV_NAME = "TIEBA_COOKIE"
 
 TIMEOUT = 15
 MAX_WORKERS = 8
@@ -105,6 +105,7 @@ def get_tbs(session: requests.Session, cookie: str) -> str:
 
 def get_favorites(session: requests.Session, bduss: str) -> list[dict[str, object]]:
     bars: list[dict[str, object]] = []
+    seen_ids: set[str] = set()
     page = 1
 
     while True:
@@ -126,10 +127,13 @@ def get_favorites(session: requests.Session, bduss: str) -> list[dict[str, objec
 
         for forum_type in ("non-gconforum", "gconforum"):
             items = forum_list.get(forum_type)
-            if isinstance(items, list):
-                bars.extend(items)
-            elif isinstance(items, dict):
-                bars.append(items)
+            candidates = items if isinstance(items, list) else [items] if isinstance(items, dict) else []
+            for item in candidates:
+                forum_id = str(item.get("id", ""))
+                if forum_id in seen_ids:
+                    continue
+                seen_ids.add(forum_id)
+                bars.append(item)
 
         if payload.get("has_more") != "1":
             break
@@ -160,19 +164,19 @@ def sign_bar(bduss: str, tbs: str, bar: dict[str, object]) -> dict[str, object]:
     }
 
 
-def run_account(cookie: str, index: int) -> AccountResult:
+def run_account(cookie: str, account_index: int) -> AccountResult:
     bduss = extract_bduss(cookie)
     cookie_header = build_cookie_header(cookie, bduss)
-    title = cookie_name(cookie_header, index)
+    title = cookie_name(cookie_header, account_index)
 
     with requests.Session() as session:
         tbs = get_tbs(session, cookie_header)
         favorites = get_favorites(session, bduss)
         if not favorites:
-            return AccountResult(index=index, ok=False, title=title, message="未获取到关注贴吧")
+            return AccountResult(index=account_index, ok=False, title=title, message="未获取到关注贴吧")
 
         pending = favorites
-        results: list[dict[str, object]] = []
+        latest_results: dict[str, dict[str, object]] = {}
         workers = min(MAX_WORKERS, max(1, os.cpu_count() or 1), len(favorites))
 
         for _ in range(MAX_ROUNDS):
@@ -185,42 +189,27 @@ def run_account(cookie: str, index: int) -> AccountResult:
                 for future in as_completed(futures):
                     result = future.result()
                     round_results.append(result)
-                    if result.get("error_code") in CRITICAL_ERRORS:
-                        pending = []
-                        break
 
-            results.extend(round_results)
+            for result in round_results:
+                latest_results[str(result["name"])] = result
+            if any(result.get("error_code") in CRITICAL_ERRORS for result in round_results):
+                break
+
             failed_names = {item["name"] for item in round_results if not item.get("ok")}
             pending = [bar for bar in pending if bar.get("name") in failed_names]
 
+        results = list(latest_results.values())
         success_count = sum(1 for item in results if item.get("ok"))
         failed = [f"{item['name']}({item['status']})" for item in results if not item.get("ok")]
         message = f"成功/已签 {success_count}/{len(favorites)}"
         if failed:
             message += "；失败：" + "、".join(failed[:8])
 
-        return AccountResult(index=index, ok=success_count > 0, title=title, message=message)
+        return AccountResult(index=account_index, ok=success_count > 0, title=title, message=message)
 
 
 def main() -> int:
-    accounts = split_accounts(os.getenv(ENV_NAME))
-    if not accounts:
-        message = f"未配置环境变量 {ENV_NAME}"
-        send_notify(SCRIPT_NAME, message)
-        return 1
-
-    results: list[AccountResult] = []
-    for index, account in enumerate(accounts, start=1):
-        try:
-            results.append(run_account(account, index))
-        except Exception as error:
-            results.append(
-                AccountResult(index=index, ok=False, title=cookie_name(account, index), message=str(error))
-            )
-
-    content = format_results(results)
-    send_notify(SCRIPT_NAME, content)
-    return 0 if any(result.ok for result in results) else 1
+    return run_accounts(SCRIPT_NAME, ACCOUNT_ENV_NAME, run_account, cookie_name)
 
 
 if __name__ == "__main__":
