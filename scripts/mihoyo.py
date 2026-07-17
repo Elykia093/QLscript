@@ -31,12 +31,13 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from utils.ql_common import AccountResult, mask_secret, run_accounts
+from utils.ql_common import AccountResult, error_message, mask_secret, run_accounts
 
 SCRIPT_NAME = "米游社"
 ACCOUNT_ENV_NAME = "MIHOYO_COOKIE"
 FORUM_IDS_ENV_NAME = "MIHOYO_GIDS"
 TIMEOUT = 15
+MESSAGE_LIMIT = 300
 
 SIGN_URL = "https://bbs-api.miyoushe.com/apihub/app/api/signIn"
 APP_VERSION = "2.109.0"
@@ -53,6 +54,10 @@ FORUMS = {
     "8": "绝区零",
     "9": "崩坏：因缘精灵",
 }
+
+SUCCESS_RETCODES = {"0"}
+CAPTCHA_RETCODES = {"1034"}
+EXPIRED_COOKIE_RETCODES = {"-100"}
 
 
 def md5(text: str) -> str:
@@ -108,22 +113,33 @@ def build_headers(cookie: str, body: str) -> dict[str, str]:
     }
 
 
+def parse_sign_response(payload: object) -> str:
+    if not isinstance(payload, dict):
+        raise RuntimeError("签到响应不是 JSON 对象")
+
+    raw_retcode = payload.get("retcode")
+    if isinstance(raw_retcode, bool) or not isinstance(raw_retcode, (int, str)):
+        raise RuntimeError("签到响应的 retcode 格式无效")
+    retcode = str(raw_retcode).strip()
+
+    raw_message = payload.get("message")
+    message = raw_message.strip()[:MESSAGE_LIMIT] if isinstance(raw_message, str) else "未知响应"
+    message = message or "未知响应"
+    if retcode in SUCCESS_RETCODES:
+        return message
+    if retcode in CAPTCHA_RETCODES:
+        raise RuntimeError("触发验证码")
+    if retcode in EXPIRED_COOKIE_RETCODES:
+        raise RuntimeError("Cookie 失效")
+    raise RuntimeError(f"业务码 {retcode}: {message}")
+
+
 def sign_forum(session: requests.Session, cookie: str, gid: str) -> str:
     body = json.dumps({"gids": gid}, separators=(",", ":"))
     response = session.post(SIGN_URL, headers=build_headers(cookie, body), data=body, timeout=TIMEOUT)
     response.raise_for_status()
-    payload = response.json()
-    retcode = payload.get("retcode")
-    message = payload.get("message") or "未知响应"
-    name = FORUMS.get(gid, gid)
-    success_messages = ("OK", "成功", "已签到", "已经签到", "已完成")
-    if retcode == 0 or any(item in message for item in success_messages):
-        return f"{name}: {message}"
-    if retcode == 1034:
-        raise RuntimeError(f"{name}: 触发验证码")
-    if retcode == -100:
-        raise RuntimeError(f"{name}: Cookie 失效")
-    raise RuntimeError(f"{name}: {message}")
+    message = parse_sign_response(response.json())
+    return f"{FORUMS.get(gid, gid)}: {message}"
 
 
 def run_account(cookie: str, account_index: int) -> AccountResult:
@@ -132,16 +148,23 @@ def run_account(cookie: str, account_index: int) -> AccountResult:
         raise RuntimeError(f"{FORUM_IDS_ENV_NAME} 未配置有效分区")
 
     messages: list[str] = []
+    success_count = 0
     with requests.Session() as session:
-        for gid in gids:
-            messages.append(sign_forum(session, cookie, gid))
-            time.sleep(random.uniform(1.0, 2.0))
+        for gid_offset, gid in enumerate(gids):
+            name = FORUMS.get(gid, gid)
+            try:
+                messages.append(sign_forum(session, cookie, gid))
+                success_count += 1
+            except (requests.RequestException, RuntimeError, ValueError) as error:
+                messages.append(f"{name}: 失败 - {error_message(error)}")
+            if gid_offset < len(gids) - 1:
+                time.sleep(random.uniform(1.0, 2.0))
 
     return AccountResult(
         index=account_index,
-        ok=True,
+        ok=success_count > 0,
         title=account_title(cookie, account_index),
-        message="；".join(messages),
+        message=f"成功/已签 {success_count}/{len(gids)}；" + "；".join(messages),
     )
 
 

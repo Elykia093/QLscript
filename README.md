@@ -12,8 +12,11 @@ ql repo https://github.com/Elykia093/QLscript.git "scripts/" "templates|README|S
 
 ## 运行依赖
 
-- Python 脚本：`requests`
+- Python 脚本：Python 3.10+、`requests`
 - JavaScript 脚本：Node.js 18+
+- 文档站开发：Node.js 20.19+
+
+本地运行完整质量检查前，可执行 `python -m pip install -r requirements.txt -r requirements-dev.txt` 安装运行与审计依赖。
 
 ## 脚本列表
 
@@ -47,10 +50,14 @@ npm run dev
 发布或提交前建议在仓库根目录运行：
 
 ```bash
-python -m compileall -q scripts templates utils
+python -m compileall -q scripts templates utils tests tools
+python -m unittest discover -s tests -p "test_*.py" -v
+node --test tests/*.test.js
+python tools/check_repository_consistency.py
+pip-audit --strict -r requirements.txt
 npm --prefix docs run types:check
 npm --prefix docs run build
-npm --prefix docs audit --omit=dev
+npm --prefix docs audit
 ```
 
 ## 目录结构
@@ -63,6 +70,7 @@ npm --prefix docs audit --omit=dev
 | `docs/` | Fumadocs UI 文档站 |
 | `SCRIPT_STANDARD.md` | 新增或重构脚本时参考的维护规范 |
 | `requirements.txt` | Python 脚本依赖清单 |
+| `requirements-dev.txt` | 本地与 CI 的 Python 质量审计依赖 |
 
 ## 维护约定
 

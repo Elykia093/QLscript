@@ -5,15 +5,21 @@ description: Python、Node.js 和青龙通知模块的依赖边界。
 
 ## Python
 
-Python 脚本当前依赖 `requests`。青龙环境缺少依赖时，可以按面板依赖管理方式安装，或参考根目录 `requirements.txt`。
+Python 脚本需要 Python 3.10+，当前依赖 `requests`。青龙环境缺少依赖时，可以按面板依赖管理方式安装，或参考根目录 `requirements.txt`。
 
 ```text
 requests
 ```
 
+`requirements-dev.txt` 仅用于本地和 CI 质量检查，其中固定了 `pip-audit`；青龙运行任务脚本不需要安装该文件。
+
 ## JavaScript
 
 JavaScript 脚本需要 Node.js 18+。当前 `wzyd.js` 使用仓库内公共方法和青龙通知能力。
+
+## 文档站
+
+文档站开发与构建需要 Node.js 20.19+；GitHub Actions 当前使用 Node.js 22。这个版本要求高于任务脚本，不要混为同一运行时基线。
 
 ## 通知模块
 

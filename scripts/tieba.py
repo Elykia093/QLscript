@@ -29,7 +29,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from utils.ql_common import AccountResult, cookie_name, run_accounts
+from utils.ql_common import AccountResult, cookie_name, error_message, run_accounts
 
 SCRIPT_NAME = "百度贴吧"
 ACCOUNT_ENV_NAME = "TIEBA_COOKIE"
@@ -37,12 +37,13 @@ ACCOUNT_ENV_NAME = "TIEBA_COOKIE"
 TIMEOUT = 15
 MAX_WORKERS = 8
 MAX_ROUNDS = 5
+MAX_FAVORITE_PAGES = 20
 MIN_DELAY = 1
 MAX_DELAY = 3
 
-TBS_URL = "http://tieba.baidu.com/dc/common/tbs"
-LIKE_URL = "http://c.tieba.baidu.com/c/f/forum/like"
-SIGN_URL = "http://c.tieba.baidu.com/c/c/forum/sign"
+TBS_URL = "https://tieba.baidu.com/dc/common/tbs"
+LIKE_URL = "https://c.tieba.baidu.com/c/f/forum/like"
+SIGN_URL = "https://c.tieba.baidu.com/c/c/forum/sign"
 
 HEADERS = {
     "Content-Type": "application/x-www-form-urlencoded",
@@ -63,8 +64,8 @@ SIGN_DATA = {
     "from": "1008621y",
 }
 
-SUCCESS_CODES = {"0", 0, "160002"}
-CRITICAL_ERRORS = {"340006", 340006}
+SUCCESS_CODES = {"0", "160002"}
+CRITICAL_ERRORS = {"340006"}
 ERROR_CODES = {
     "0": "签到成功",
     "160002": "已经签到",
@@ -97,6 +98,8 @@ def get_tbs(session: requests.Session, cookie: str) -> str:
     response = session.get(TBS_URL, headers=headers, timeout=TIMEOUT)
     response.raise_for_status()
     data = response.json()
+    if not isinstance(data, dict):
+        raise RuntimeError("获取 tbs 的响应不是 JSON 对象")
     tbs = data.get("tbs")
     if not tbs:
         raise RuntimeError(data.get("error") or "获取 tbs 失败")
@@ -106,9 +109,9 @@ def get_tbs(session: requests.Session, cookie: str) -> str:
 def get_favorites(session: requests.Session, bduss: str) -> list[dict[str, object]]:
     bars: list[dict[str, object]] = []
     seen_ids: set[str] = set()
-    page = 1
 
-    while True:
+    for page in range(1, MAX_FAVORITE_PAGES + 1):
+        previous_count = len(seen_ids)
         data = {
             **BASE_DATA,
             "BDUSS": bduss,
@@ -121,25 +124,32 @@ def get_favorites(session: requests.Session, bduss: str) -> list[dict[str, objec
         response = session.post(LIKE_URL, data=encode_data(data), timeout=TIMEOUT)
         response.raise_for_status()
         payload = response.json()
+        if not isinstance(payload, dict):
+            raise RuntimeError("关注贴吧响应不是 JSON 对象")
         forum_list = payload.get("forum_list") or {}
         if not forum_list:
-            break
+            if str(payload.get("has_more")) == "1":
+                raise RuntimeError("关注贴吧分页指示继续，但当前页没有数据")
+            return bars
 
         for forum_type in ("non-gconforum", "gconforum"):
             items = forum_list.get(forum_type)
             candidates = items if isinstance(items, list) else [items] if isinstance(items, dict) else []
             for item in candidates:
+                if not isinstance(item, dict):
+                    raise RuntimeError("关注贴吧条目不是 JSON 对象")
                 forum_id = str(item.get("id", ""))
                 if forum_id in seen_ids:
                     continue
                 seen_ids.add(forum_id)
                 bars.append(item)
 
-        if payload.get("has_more") != "1":
-            break
-        page += 1
+        if str(payload.get("has_more")) != "1":
+            return bars
+        if len(seen_ids) == previous_count:
+            raise RuntimeError("关注贴吧分页没有新增数据，已停止继续请求")
 
-    return bars
+    raise RuntimeError(f"关注贴吧分页超过 {MAX_FAVORITE_PAGES} 页，已停止继续请求")
 
 
 def sign_bar(bduss: str, tbs: str, bar: dict[str, object]) -> dict[str, object]:
@@ -155,13 +165,68 @@ def sign_bar(bduss: str, tbs: str, bar: dict[str, object]) -> dict[str, object]:
     response = requests.post(SIGN_URL, data=encode_data(data), timeout=TIMEOUT)
     response.raise_for_status()
     payload = response.json()
-    error_code = payload.get("error_code", "unknown")
+    if not isinstance(payload, dict):
+        raise RuntimeError("贴吧签到响应不是 JSON 对象")
+    error_code = str(payload.get("error_code", "unknown")).strip()
     return {
+        "id": str(bar["id"]),
         "name": str(bar["name"]),
         "error_code": error_code,
         "status": ERROR_CODES.get(str(error_code), f"未知错误: {error_code}"),
         "ok": error_code in SUCCESS_CODES,
+        "retryable": False,
     }
+
+
+def failed_sign_result(
+    bar: dict[str, object],
+    error: Exception,
+    *,
+    retryable: bool,
+) -> dict[str, object]:
+    forum_id = str(bar.get("id", "unknown"))
+    forum_name = str(bar.get("name") or f"贴吧{forum_id}")
+    return {
+        "id": forum_id,
+        "name": forum_name,
+        "error_code": "request_error" if retryable else "response_error",
+        "status": error_message(error),
+        "ok": False,
+        "retryable": retryable,
+    }
+
+
+def is_retryable_request_error(error: requests.RequestException) -> bool:
+    response = getattr(error, "response", None)
+    if response is None:
+        return True
+    return response.status_code == 429 or response.status_code >= 500
+
+
+def run_sign_round(
+    bduss: str,
+    tbs: str,
+    bars: list[dict[str, object]],
+    workers: int,
+) -> list[dict[str, object]]:
+    results: list[dict[str, object]] = []
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(sign_bar, bduss, tbs, bar): bar for bar in bars}
+        for future in as_completed(futures):
+            bar = futures[future]
+            try:
+                results.append(future.result())
+            except requests.RequestException as error:
+                results.append(
+                    failed_sign_result(
+                        bar,
+                        error,
+                        retryable=is_retryable_request_error(error),
+                    )
+                )
+            except (KeyError, RuntimeError, TypeError, ValueError) as error:
+                results.append(failed_sign_result(bar, error, retryable=False))
+    return results
 
 
 def run_account(cookie: str, account_index: int) -> AccountResult:
@@ -183,20 +248,19 @@ def run_account(cookie: str, account_index: int) -> AccountResult:
             if not pending:
                 break
 
-            round_results = []
-            with ThreadPoolExecutor(max_workers=workers) as executor:
-                futures = [executor.submit(sign_bar, bduss, tbs, bar) for bar in pending]
-                for future in as_completed(futures):
-                    result = future.result()
-                    round_results.append(result)
+            round_results = run_sign_round(bduss, tbs, pending, workers)
 
             for result in round_results:
-                latest_results[str(result["name"])] = result
+                latest_results[str(result["id"])] = result
             if any(result.get("error_code") in CRITICAL_ERRORS for result in round_results):
                 break
 
-            failed_names = {item["name"] for item in round_results if not item.get("ok")}
-            pending = [bar for bar in pending if bar.get("name") in failed_names]
+            retryable_ids = {
+                str(item["id"])
+                for item in round_results
+                if not item.get("ok") and item.get("retryable")
+            }
+            pending = [bar for bar in pending if str(bar.get("id")) in retryable_ids]
 
         results = list(latest_results.values())
         success_count = sum(1 for item in results if item.get("ok"))

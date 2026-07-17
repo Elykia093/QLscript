@@ -16,7 +16,7 @@ npm run dev
 ```bash
 npm run types:check
 npm run build
-npm audit --omit=dev
+npm audit
 ```
 
 ## 内容维护
