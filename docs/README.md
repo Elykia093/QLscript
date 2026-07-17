@@ -2,6 +2,8 @@
 
 这里是 QLscript 的 Fumadocs UI 文档站。
 
+在线地址：[https://elykia093.github.io/QLscript/](https://elykia093.github.io/QLscript/)
+
 ## 开发
 
 ```bash

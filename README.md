@@ -36,6 +36,8 @@ ql repo https://github.com/Elykia093/QLscript.git "scripts/" "templates|README|S
 
 `docs/` 是 Fumadocs UI 文档站，包含安装、环境变量、脚本详解、开发规范和排障说明。
 
+在线文档：[https://elykia093.github.io/QLscript/](https://elykia093.github.io/QLscript/)
+
 ```bash
 cd docs
 npm install
