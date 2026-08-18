@@ -46,7 +46,9 @@ export default function HomePage() {
       <header className={styles.header}>
         <nav className={styles.nav} aria-label="主导航">
           <a className={styles.brand} href={internalHref('/')} aria-label="QLscript 首页">
-            <span className={styles.brandLogo} aria-hidden="true">QL</span>
+            <span className={styles.brandLogo} aria-hidden="true">
+              <img src={internalHref('/qinglong-logo.png')} alt="" width="32" height="32" />
+            </span>
             <span>QLscript</span>
           </a>
 
@@ -91,20 +93,13 @@ export default function HomePage() {
           </div>
 
           <div className={styles.heroArtwork} aria-hidden="true">
-            <svg className={styles.heroLogo} viewBox="0 0 400 400">
-              <defs>
-                <linearGradient id="qlscript-hero-gradient" x1="48" y1="48" x2="352" y2="352">
-                  <stop offset="0" stopColor="#36d7dc" />
-                  <stop offset="0.52" stopColor="#16b8c7" />
-                  <stop offset="1" stopColor="#168fdf" />
-                </linearGradient>
-              </defs>
-              <circle cx="200" cy="200" r="178" fill="url(#qlscript-hero-gradient)" />
-              <circle cx="200" cy="200" r="151" fill="none" stroke="rgba(255,255,255,.28)" strokeWidth="2" />
-              <path d="M150 132 92 200l58 68" fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="26" />
-              <path d="m250 132 58 68-58 68" fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="26" />
-              <path d="m226 105-52 190" fill="none" stroke="#fff" strokeLinecap="round" strokeWidth="22" opacity=".96" />
-            </svg>
+            <img
+              className={styles.heroLogo}
+              src={internalHref('/qinglong-logo.png')}
+              alt="青龙 Logo"
+              width="375"
+              height="375"
+            />
           </div>
         </div>
 

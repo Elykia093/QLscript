@@ -71,11 +71,14 @@
   height: 32px;
   place-items: center;
   border-radius: 50%;
-  color: #ffffff;
-  background: linear-gradient(140deg, var(--brand-light), var(--brand-dark));
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  overflow: hidden;
+}
+
+.brandLogo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .navActions {
@@ -251,7 +254,7 @@
   display: block;
   width: min(100%, 375px);
   height: auto;
-  filter: drop-shadow(0 22px 42px rgb(24 166 216 / 15%));
+  filter: drop-shadow(0 22px 42px rgb(18 117 56 / 16%));
 }
 
 .features {
