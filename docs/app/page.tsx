@@ -1,23 +1,4 @@
-import {
-  ArrowRight,
-  BookOpenText,
-  Cloud,
-  Code2,
-  FileCode2,
-  Gamepad2,
-  GitBranch,
-  HardDrive,
-  KeyRound,
-  MessageSquareText,
-  Radio,
-  ShoppingBag,
-  Sparkles,
-  Terminal,
-  type LucideIcon,
-} from 'lucide-react';
-import { readFileSync, readdirSync } from 'node:fs';
-import { extname, join, parse } from 'node:path';
-import { source } from '@/lib/source';
+import { GitBranch, Search } from 'lucide-react';
 import styles from './page.module.css';
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
@@ -26,81 +7,36 @@ function internalHref(path: string) {
   return `${basePath}${path}`;
 }
 
-const scriptIcons: Partial<Record<string, LucideIcon>> = {
-  alipan: Cloud,
-  enshan: Radio,
-  tieba: MessageSquareText,
-  wzyd: Gamepad2,
-  quark: HardDrive,
-  smzdm: ShoppingBag,
-  mihoyo: Sparkles,
-  pojie52: Code2,
-};
-
-function getScripts() {
-  const scriptsDirectory = join(process.cwd(), '..', 'scripts');
-
-  return readdirSync(scriptsDirectory, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && ['.py', '.js'].includes(extname(entry.name)))
-    .map((entry) => {
-      const slug = parse(entry.name).name;
-      const detailPage = source.getPage(['scripts', slug]);
-      if (!detailPage) throw new Error(`脚本 ${entry.name} 缺少 docs/content/docs/scripts/${slug}.mdx`);
-
-      const scriptSource = readFileSync(join(scriptsDirectory, entry.name), 'utf8');
-      const cron = scriptSource.match(/^\s*cron:\s*([^\r\n]+)/m)?.[1].trim();
-      if (!cron) throw new Error(`脚本 ${entry.name} 缺少 cron 文件头`);
-
-      const fields = cron.split(/\s+/);
-      const minute = Number(fields[0]);
-      const hour = Number(fields[1]);
-      const isDailyTime = fields.length === 5
-        && Number.isInteger(minute)
-        && minute >= 0
-        && minute < 60
-        && Number.isInteger(hour)
-        && hour >= 0
-        && hour < 24
-        && fields.slice(2).every((field) => field === '*');
-
-      return {
-        href: detailPage.url,
-        time: isDailyTime
-          ? `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
-          : cron,
-        sortOrder: isDailyTime ? hour * 60 + minute : Number.MAX_SAFE_INTEGER,
-        name: detailPage.data.title,
-        file: entry.name,
-        runtime: extname(entry.name) === '.py' ? 'Python' : 'Node.js',
-        icon: scriptIcons[slug] ?? FileCode2,
-      };
-    })
-    .sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name, 'zh-CN'));
-}
-
-const scripts = getScripts();
-const runtimeSummary = [...new Set(scripts.map((script) => script.runtime))]
-  .map((runtime) => `${scripts.filter((script) => script.runtime === runtime).length} 个 ${runtime} 任务`)
-  .join(' · ');
-
-const guideLinks = [
+const featureCards = [
   {
-    href: '/docs/guide/getting-started',
-    title: '拉取与依赖',
-    description: '使用仓库命令拉取任务，并确认 Python、Node.js 与 requests。',
-    icon: Terminal,
+    icon: '🌐',
+    title: '常用平台脚本',
+    description: '集中维护签到、网盘与社区任务，拉取仓库后即可统一运行。',
   },
   {
-    href: '/docs/guide/environment',
-    title: '填写环境变量',
-    description: '按脚本填写 Cookie、token 或请求 JSON，支持多账号配置。',
-    icon: KeyRound,
+    icon: '🐍',
+    title: 'Python 任务',
+    description: '覆盖常见自动化场景，依赖与环境变量均有对应文档说明。',
   },
   {
-    href: '/docs/guide/troubleshooting',
-    title: '运行与排障',
-    description: '先手动运行单个任务，再按日志定位依赖、凭据与通知问题。',
-    icon: BookOpenText,
+    icon: '🟢',
+    title: 'Node.js 任务',
+    description: '同时支持 JavaScript 脚本，与 Python 任务共用一套维护流程。',
+  },
+  {
+    icon: '⏰',
+    title: '定时任务管理',
+    description: '脚本内声明默认 cron，可直接交由青龙面板定时调度。',
+  },
+  {
+    icon: '👥',
+    title: '多账号配置',
+    description: '按脚本文档填写 Cookie、token 或请求数据，支持多账号运行。',
+  },
+  {
+    icon: '📖',
+    title: '配套使用文档',
+    description: '安装、变量、脚本行为与常见问题跟随仓库同步维护。',
   },
 ];
 
@@ -110,119 +46,81 @@ export default function HomePage() {
       <header className={styles.header}>
         <nav className={styles.nav} aria-label="主导航">
           <a className={styles.brand} href={internalHref('/')} aria-label="QLscript 首页">
-            <span className={styles.brandMark} aria-hidden="true">
-              <Terminal size={17} strokeWidth={2.2} />
-            </span>
+            <span className={styles.brandLogo} aria-hidden="true">QL</span>
             <span>QLscript</span>
           </a>
 
-          <div className={styles.navLinks}>
-            <a href={internalHref('/docs')}>文档</a>
-            <a href={internalHref('/docs/guide/scripts')}>脚本</a>
-            <a href={internalHref('/docs/guide/getting-started')}>使用指南</a>
-          </div>
-
           <div className={styles.navActions}>
+            <a className={styles.searchLink} href={internalHref('/docs')} aria-label="搜索文档">
+              <Search size={18} aria-hidden="true" />
+              <span>搜索</span>
+            </a>
+            <div className={styles.navLinks}>
+              <a href={internalHref('/docs/guide/getting-started')}>指南</a>
+              <a href={internalHref('/docs/guide/scripts')}>脚本</a>
+            </div>
             <a
-              className={styles.iconLink}
+              className={styles.githubLink}
               href="https://github.com/Elykia093/QLscript"
               target="_blank"
               rel="noreferrer"
               aria-label="在 GitHub 查看 QLscript"
               title="GitHub"
             >
-              <GitBranch size={19} aria-hidden="true" />
+              <GitBranch size={22} aria-hidden="true" />
             </a>
           </div>
         </nav>
       </header>
 
-      <div className={styles.content}>
-        <section className={styles.hero} aria-labelledby="hero-title">
+      <section className={styles.home}>
+        <div className={styles.hero}>
           <div className={styles.heroCopy}>
             <h1 id="hero-title">QLscript</h1>
-            <p className={styles.heroSummary}>
-              青龙面板自动化脚本库，集中维护常用任务、运行时间和配置文档。
-            </p>
+            <p className={styles.heroTitle}>青龙面板自动化脚本库</p>
+            <p className={styles.heroTagline}>常用签到与网盘任务，支持 Python 与 Node.js</p>
 
             <div className={styles.heroActions}>
-              <a className={styles.primaryAction} href={internalHref('/docs/guide/getting-started')}>
-                <BookOpenText size={16} aria-hidden="true" />
+              <a className={styles.primaryButton} href={internalHref('/docs/guide/getting-started')}>
                 快速开始
+              </a>
+              <a className={styles.secondaryButton} href={internalHref('/docs/guide/scripts')}>
+                浏览脚本
               </a>
             </div>
           </div>
-        </section>
 
-        <section className={styles.ecosystem} aria-labelledby="scripts-title">
-          <div className={styles.sectionHeading}>
-            <h2 id="scripts-title">当前脚本</h2>
-            <p>{runtimeSummary}</p>
+          <div className={styles.heroArtwork} aria-hidden="true">
+            <svg className={styles.heroLogo} viewBox="0 0 400 400">
+              <defs>
+                <linearGradient id="qlscript-hero-gradient" x1="48" y1="48" x2="352" y2="352">
+                  <stop offset="0" stopColor="#36d7dc" />
+                  <stop offset="0.52" stopColor="#16b8c7" />
+                  <stop offset="1" stopColor="#168fdf" />
+                </linearGradient>
+              </defs>
+              <circle cx="200" cy="200" r="178" fill="url(#qlscript-hero-gradient)" />
+              <circle cx="200" cy="200" r="151" fill="none" stroke="rgba(255,255,255,.28)" strokeWidth="2" />
+              <path d="M150 132 92 200l58 68" fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="26" />
+              <path d="m250 132 58 68-58 68" fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="26" />
+              <path d="m226 105-52 190" fill="none" stroke="#fff" strokeLinecap="round" strokeWidth="22" opacity=".96" />
+            </svg>
           </div>
+        </div>
 
-          <ul className={styles.scriptCloud}>
-            {scripts.map((script) => {
-              const Icon = script.icon;
-
-              return (
-                <li key={script.href}>
-                  <a href={internalHref(script.href)}>
-                    <Icon size={26} strokeWidth={1.7} aria-hidden="true" />
-                    <strong>{script.name}</strong>
-                    <span>{script.file} · {script.time}</span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
+        <section className={styles.features} aria-label="项目能力">
+          {featureCards.map((feature) => (
+            <article className={styles.featureCard} key={feature.title}>
+              <span className={styles.featureIcon} aria-hidden="true">{feature.icon}</span>
+              <h2>{feature.title}</h2>
+              <p>{feature.description}</p>
+            </article>
+          ))}
         </section>
-
-        <section className={styles.docsShowcase} aria-labelledby="docs-title">
-          <div className={styles.sectionHeading}>
-            <h2 id="docs-title">使用文档</h2>
-            <p>安装、环境变量、脚本行为和常见错误都在同一套文档里维护</p>
-          </div>
-
-          <div className={styles.guideGrid}>
-            {guideLinks.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <a key={item.href} href={internalHref(item.href)}>
-                  <Icon size={21} strokeWidth={1.8} aria-hidden="true" />
-                  <span>
-                    <strong>{item.title}</strong>
-                    <small>{item.description}</small>
-                  </span>
-                  <ArrowRight size={17} aria-hidden="true" />
-                </a>
-              );
-            })}
-          </div>
-
-          <a className={styles.docsPreview} href={internalHref('/docs')} aria-label="打开 QLscript 文档">
-            <img
-              src={internalHref('/home-docs-preview.jpg')}
-              alt="QLscript 文档页面，包含导航、快速入口和维护说明"
-              width={1265}
-              height={712}
-              loading="lazy"
-            />
-          </a>
-        </section>
-      </div>
+      </section>
 
       <footer className={styles.footer}>
-        <div className={styles.footerInner}>
-          <a className={styles.footerBrand} href={internalHref('/')}>QLscript</a>
-          <nav className={styles.footerLinks} aria-label="页脚导航">
-            <a href={internalHref('/docs')}>文档</a>
-            <a href={internalHref('/docs/guide/scripts')}>脚本</a>
-            <a href={internalHref('/docs/guide/environment')}>环境变量</a>
-            <a href="https://github.com/Elykia093/QLscript" target="_blank" rel="noreferrer">GitHub</a>
-          </nav>
-          <span className={styles.footerNote}>青龙面板自动化脚本库</span>
-        </div>
+        <p>© 2026 QLscript. 青龙面板自动化脚本库</p>
       </footer>
     </main>
   );
