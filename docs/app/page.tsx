@@ -1,10 +1,8 @@
 import {
   ArrowRight,
-  BellRing,
   BookOpenText,
   Cloud,
   Code2,
-  ExternalLink,
   FileCode2,
   Gamepad2,
   GitBranch,
@@ -15,7 +13,6 @@ import {
   ShoppingBag,
   Sparkles,
   Terminal,
-  UsersRound,
   type LucideIcon,
 } from 'lucide-react';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -126,9 +123,6 @@ export default function HomePage() {
           </div>
 
           <div className={styles.navActions}>
-            <a className={styles.environmentLink} href={internalHref('/docs/guide/environment')}>
-              环境变量
-            </a>
             <a
               className={styles.iconLink}
               href="https://github.com/Elykia093/QLscript"
@@ -145,41 +139,16 @@ export default function HomePage() {
 
       <div className={styles.content}>
         <section className={styles.hero} aria-labelledby="hero-title">
-          <div className={styles.heroScene} aria-hidden="true">
-            <Terminal size={240} strokeWidth={1.1} />
-            <div className={styles.commandLines}>
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
-
           <div className={styles.heroCopy}>
-            <p className={styles.heroBadge}>青龙面板自动化脚本库</p>
-            <h1 id="hero-title">
-              QLscript，收纳常用任务，
-              <br />
-              连接 <span>青龙面板</span>.
-            </h1>
+            <h1 id="hero-title">QLscript</h1>
+            <p className={styles.heroSummary}>
+              青龙面板自动化脚本库，集中维护常用任务、运行时间和配置文档。
+            </p>
 
             <div className={styles.heroActions}>
               <a className={styles.primaryAction} href={internalHref('/docs/guide/getting-started')}>
                 <BookOpenText size={16} aria-hidden="true" />
                 快速开始
-              </a>
-              <a
-                className={styles.secondaryAction}
-                href="https://github.com/Elykia093/QLscript"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <GitBranch size={16} aria-hidden="true" />
-                GitHub
-              </a>
-              <a className={styles.secondaryAction} href={internalHref('/docs/guide/scripts')}>
-                <FileCode2 size={16} aria-hidden="true" />
-                脚本索引
               </a>
             </div>
           </div>
@@ -200,7 +169,7 @@ export default function HomePage() {
                   <a href={internalHref(script.href)}>
                     <Icon size={26} strokeWidth={1.7} aria-hidden="true" />
                     <strong>{script.name}</strong>
-                    <span>{script.file}</span>
+                    <span>{script.file} · {script.time}</span>
                   </a>
                 </li>
               );
@@ -208,31 +177,9 @@ export default function HomePage() {
           </ul>
         </section>
 
-        <section className={styles.schedule} aria-labelledby="schedule-title">
-          <div className={styles.sectionHeading}>
-            <h2 id="schedule-title">默认执行时间</h2>
-            <p>时间取自每个脚本文件头声明的默认 cron，任务从 08:10 起错峰运行</p>
-          </div>
-
-          <ol
-            className={styles.scheduleRail}
-            style={{ gridTemplateColumns: `repeat(${scripts.length}, minmax(112px, 1fr))` }}
-          >
-            {scripts.map((script) => (
-              <li key={script.href}>
-                <a href={internalHref(script.href)}>
-                  <time>{script.time}</time>
-                  <strong>{script.name}</strong>
-                  <span>{script.runtime}</span>
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
-
         <section className={styles.docsShowcase} aria-labelledby="docs-title">
           <div className={styles.sectionHeading}>
-            <h2 id="docs-title">从拉库到排障</h2>
+            <h2 id="docs-title">使用文档</h2>
             <p>安装、环境变量、脚本行为和常见错误都在同一套文档里维护</p>
           </div>
 
@@ -266,38 +213,15 @@ export default function HomePage() {
       </div>
 
       <footer className={styles.footer}>
-        <div className={styles.footerGrid}>
-          <div>
-            <h3>关于项目</h3>
-            <a href={internalHref('/docs')}>项目说明</a>
-            <a href={internalHref('/docs/guide/getting-started')}>快速开始</a>
-            <a href={internalHref('/docs/guide/development')}>开发规范</a>
-          </div>
-          <div>
-            <h3>配置</h3>
+        <div className={styles.footerInner}>
+          <a className={styles.footerBrand} href={internalHref('/')}>QLscript</a>
+          <nav className={styles.footerLinks} aria-label="页脚导航">
+            <a href={internalHref('/docs')}>文档</a>
+            <a href={internalHref('/docs/guide/scripts')}>脚本</a>
             <a href={internalHref('/docs/guide/environment')}>环境变量</a>
-            <a href={internalHref('/docs/guide/cookies')}>凭据填写</a>
-            <a href={internalHref('/docs/guide/dependencies')}>运行依赖</a>
-          </div>
-          <div>
-            <h3>帮助</h3>
-            <a href={internalHref('/docs/guide/scripts')}>脚本索引</a>
-            <a href={internalHref('/docs/guide/troubleshooting')}>常见排障</a>
-            <a href={internalHref('/docs/guide/docs-site')}>文档站维护</a>
-          </div>
-          <div>
-            <h3>仓库</h3>
-            <a href="https://github.com/Elykia093/QLscript" target="_blank" rel="noreferrer">
-              GitHub <ExternalLink size={12} aria-hidden="true" />
-            </a>
-            <span><UsersRound size={13} aria-hidden="true" /> 多账号任务</span>
-            <span><BellRing size={13} aria-hidden="true" /> 通知自动降级</span>
-          </div>
-        </div>
-
-        <div className={styles.footerBottom}>
-          <span>QLscript</span>
-          <span>青龙任务脚本库 · 代码与文档同步维护</span>
+            <a href="https://github.com/Elykia093/QLscript" target="_blank" rel="noreferrer">GitHub</a>
+          </nav>
+          <span className={styles.footerNote}>青龙面板自动化脚本库</span>
         </div>
       </footer>
     </main>
